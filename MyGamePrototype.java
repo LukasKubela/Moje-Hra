@@ -51,7 +51,7 @@ class GamePanel extends JPanel implements KeyListener {
     public GamePanel(JFrame frame, MenuPanel menuPanel, int playerCoins) {
         this.frame = frame;
         this.menuPanel = menuPanel;
-        this.playerCoins = playerCoins;  
+        this.playerCoins = playerCoins;
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
@@ -109,7 +109,6 @@ class FinalPanel extends JPanel {
     private int playerLives = 3;
     private int enemyLives = 3;
     private boolean gameOver = false;
-    private boolean lastShotWasLive = false;
     private boolean playerStarts;
     private int shotCount = 0;
     private int playerCoins = 0;
@@ -133,7 +132,6 @@ class FinalPanel extends JPanel {
     private void updateTurnLabel(String text) {
         SwingUtilities.invokeLater(() -> {
             turnLabel.setText("Turn: " + text);
-
             boolean isPlayerTurn = text.equals("Player");
             playerButton.setEnabled(isPlayerTurn);
             enemyButton.setEnabled(isPlayerTurn);
@@ -160,13 +158,12 @@ class FinalPanel extends JPanel {
         setupBall(150, 250, Color.BLUE);
     }
 
-    private JLabel setupBall(int x, int y, Color color) {
+    private void setupBall(int x, int y, Color color) {
         JLabel ball = new JLabel();
         ball.setOpaque(true);
         ball.setBackground(color);
         ball.setBounds(x, y, 50, 50);
         this.add(ball);
-        return ball;
     }
 
 
@@ -201,7 +198,6 @@ class FinalPanel extends JPanel {
 
 
         playerButton = new JButton("YOU");
-        playerButton.setFont(new Font("Arial", Font.BOLD, 12));
         playerButton.setBounds(125, 200, 100, 30);
         playerButton.addActionListener(e -> {
             if (!gameOver && playerStarts) {
@@ -212,11 +208,11 @@ class FinalPanel extends JPanel {
 
 
         enemyButton = new JButton("ENEMY");
-        enemyButton.setFont(new Font("Arial", Font.BOLD, 12));
         enemyButton.setBounds(275, 200, 100, 30);
         enemyButton.addActionListener(e -> {
-            if (!gameOver && !playerStarts) {
-                playRussianRoulette(true);
+            if (!gameOver && playerStarts) {
+                playRussianRoulette(false);
+                prepareNextTurn(false);
             }
         });
         add(enemyButton);
@@ -239,48 +235,28 @@ class FinalPanel extends JPanel {
         });
     }
 
-
-
-    private JButton createButton(String text, int x, int y) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 12));
-        button.setBounds(x, y, 100, 30);
-        button.addActionListener(e -> {
-            System.out.println(text + " button clicked.");
-            if (gameOver) {
-                System.out.println("Game over. No action taken.");
-                return; // Don't allow actions if the game is over
-            }
-            if ("YOU".equals(text)) {
-                playRussianRoulette(true);
-            } else if ("ENEMY".equals(text)) {
-                playRussianRoulette(false);
-            }
-        });
-        add(button);
-        return button;
-    }
-
     private void playRussianRoulette(boolean isPlayer) {
         if (gameOver) {
             return;
         }
 
-        boolean shotFired = random.nextInt(7 - shotCount++) == 0;
-        lastShotWasLive = shotFired;
+        boolean shotFired = random.nextInt(7 - shotCount) == 0;
+        shotCount++;
 
         if (shotFired) {
             triggerLiveShot(isPlayer);
             shotCount = 0;
+            prepareNextTurn(!isPlayer);
         } else {
-            if (shotCount >= 6) {
+            if (shotCount == 6) {
                 triggerLiveShot(isPlayer);
                 shotCount = 0;
+                prepareNextTurn(!isPlayer);
             } else {
                 String survivalText = isPlayer ? "Player survives." : "Enemy survives.";
                 updateStatus(survivalText, true);
-                if (isPlayer) {
-                    prepareNextTurn(true);
+                if (!isPlayer) {
+                    prepareNextTurn(false);
                 } else {
                     prepareNextTurn(true);
                 }
@@ -291,14 +267,12 @@ class FinalPanel extends JPanel {
     private void enemyTakeTurn() {
         if (gameOver) return;
 
-        boolean decidesToShootPlayer = lastShotWasLive || random.nextInt(2) == 0;
-        System.out.println("Enemy's turn: Deciding...");
+        boolean decidesToShootPlayer = random.nextInt(2) == 0;
+        System.out.println("Enemy's turn: Deciding whether to shoot itself or the player...");
 
         Timer decisionDelay = new Timer(2000, e -> {
             playRussianRoulette(!decidesToShootPlayer);
             ((Timer)e.getSource()).stop();
-
-            prepareNextTurn(true);
         });
         decisionDelay.setRepeats(false);
         decisionDelay.start();
@@ -393,5 +367,5 @@ class FinalPanel extends JPanel {
         super.paintComponent(g);
     }
 }
-// FIXME: the enemy button doesn't work, when the enemy shoot itself it is apparently players turn, enemy doesn't want to shoot the player, saving coins to another level
+// FIXME: when the enemy shoots the player and the round was live then the enemy gets another turn, saving coins to another level
 // TODO: shop, random events, settings
