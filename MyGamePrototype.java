@@ -367,5 +367,5 @@ class FinalPanel extends JPanel {
         super.paintComponent(g);
     }
 }
-// FIXME: when the enemy shoots the player and the round was live then the enemy gets another turn, saving coins to another level
+// FIXME: when the enemy shoots the player and the round was live then the enemy gets somehow another turn, saving coins to another level
 // TODO: shop, random events, settings
