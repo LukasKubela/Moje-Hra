@@ -22,7 +22,6 @@ class MenuPanel extends JPanel {
         this.frame = frame;
         setLayout(new BorderLayout());
 
-
         JLabel menuLabel = new JLabel("MENU", SwingConstants.CENTER);
         menuLabel.setFont(new Font("Arial", Font.BOLD, 50));
         add(menuLabel, BorderLayout.NORTH);
@@ -33,13 +32,15 @@ class MenuPanel extends JPanel {
     }
 
     private void switchToGamePanel() {
-        GamePanel gamePanel = new GamePanel(frame, this, 0);
+        FinalPanel.CoinManager.resetCoins();
+        GamePanel gamePanel = new GamePanel(frame, this, FinalPanel.CoinManager.getCoins());
         frame.getContentPane().removeAll();
         frame.setContentPane(gamePanel);
         frame.revalidate();
         frame.repaint();
     }
 }
+
 
 class GamePanel extends JPanel implements KeyListener {
     private int x = 100, y = 100, size = 50;
@@ -111,7 +112,6 @@ class FinalPanel extends JPanel {
     private boolean gameOver = false;
     private boolean playerStarts;
     private int shotCount = 0;
-    private int playerCoins = 0;
     private JLabel coinsLabel;
 
     public FinalPanel(JFrame frame, MenuPanel menuPanel) {
@@ -191,7 +191,7 @@ class FinalPanel extends JPanel {
         add(enemyLivesLabel);
 
 
-        coinsLabel = new JLabel("Coins: " + playerCoins);
+        coinsLabel = new JLabel("Coins: " + CoinManager.getCoins());
         coinsLabel.setFont(new Font("Arial", Font.BOLD, 16));
         coinsLabel.setBounds(175, 400, 150, 30);
         add(coinsLabel);
@@ -246,20 +246,14 @@ class FinalPanel extends JPanel {
         if (shotFired) {
             triggerLiveShot(isPlayer);
             shotCount = 0;
-            prepareNextTurn(!isPlayer);
         } else {
             if (shotCount == 6) {
                 triggerLiveShot(isPlayer);
                 shotCount = 0;
-                prepareNextTurn(!isPlayer);
             } else {
                 String survivalText = isPlayer ? "Player survives." : "Enemy survives.";
                 updateStatus(survivalText, true);
-                if (!isPlayer) {
-                    prepareNextTurn(false);
-                } else {
-                    prepareNextTurn(true);
-                }
+                prepareNextTurn(isPlayer ? true : checkPlayerContinuation());
             }
         }
     }
@@ -291,75 +285,97 @@ class FinalPanel extends JPanel {
         if (isPlayer) {
             playerLives--;
             playerLivesLabel.setText("Player Lives: " + playerLives);
-            playerCoins -= 1;
             updateCoinsLabel();
+            CoinManager.addCoins(-1);
             if (playerLives <= 0) {
                 gameOver = true;
-                playerCoins = 0;
-                updateCoinsLabel();
                 updateStatus("Player died", false);
                 handleGameOver(true);
             } else {
-                updateStatus("Player was shot", true);
+                updateStatus("Player was shot", false);
+                prepareNextTurn(true);
             }
         } else {
             enemyLives--;
             enemyLivesLabel.setText("Enemy Lives: " + enemyLives);
-            playerCoins += 2;
             updateCoinsLabel();
+            CoinManager.addCoins(2);
             if (enemyLives <= 0) {
                 gameOver = true;
                 updateStatus("Enemy died", false);
                 handleGameOver(false);
             } else {
                 updateStatus("Enemy was shot", true);
+                prepareNextTurn(true);
             }
         }
 
-        if (!gameOver) {
-            prepareNextTurn(!isPlayer);
-        }
+        updateCoinsLabel();
+    }
+
+    private boolean checkPlayerContinuation() {
+        return playerStarts;
     }
 
     private void updateCoinsLabel() {
         SwingUtilities.invokeLater(() -> {
-            coinsLabel.setText("Coins: " + playerCoins);
+            coinsLabel.setText("Coins: " + CoinManager.getCoins());
         });
     }
 
     private void handleGameOver(boolean playerDied) {
-        String gameOverMessage = playerDied ? "YOU DIED" : "ENEMY DIED";
+        String gameOverMessage = playerDied ? "YOU DIED" : "YOU WIN!";
         updateStatusGameOver(gameOverMessage);
         playerButton.setEnabled(false);
         enemyButton.setEnabled(false);
 
         new Timer(2000, e -> {
             if (!playerDied) {
-                switchToGamePanel();
+                switchToGamePanel(CoinManager.getCoins());
             } else {
-                playerCoins = 0;
+                CoinManager.resetCoins();
                 switchToMenu();
             }
-            ((Timer)e.getSource()).stop();
+            ((Timer) e.getSource()).stop();
         }).start();
     }
+
+
 
     private void updateStatusGameOver(String gameOverMessage) {
         SwingUtilities.invokeLater(() -> statusLabel.setText(gameOverMessage));
     }
 
     private void switchToMenu() {
-        menuPanel = new MenuPanel(frame);
+        CoinManager.resetCoins();
+        MenuPanel menuPanel = new MenuPanel(frame);
         frame.setContentPane(menuPanel);
         frame.revalidate();
         frame.repaint();
     }
 
-    private void switchToGamePanel() {
-        GamePanel gamePanel = new GamePanel(frame, menuPanel, playerCoins);
+    private void switchToGamePanel(int coins) {
+        GamePanel gamePanel = new GamePanel(frame, menuPanel, coins);
+        frame.getContentPane().removeAll();
         frame.setContentPane(gamePanel);
         frame.revalidate();
         frame.repaint();
+    }
+
+    public static class CoinManager {
+        private static int coins = 0;
+
+        public static void addCoins(int amount) {
+            coins += amount;
+        }
+
+        public static void resetCoins() {
+            coins = 0;
+        }
+
+        public static int getCoins() {
+            return coins;
+        }
     }
 
     @Override
@@ -367,5 +383,4 @@ class FinalPanel extends JPanel {
         super.paintComponent(g);
     }
 }
-// FIXME: when the enemy shoots the player and the round was live then the enemy gets somehow another turn, saving coins to another level
 // TODO: shop, random events, settings
