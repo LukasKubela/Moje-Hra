@@ -26,7 +26,7 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
     private final GamePanel gamePanel;
     private final JFrame frame;
 
-    public ElevatorPanel(MenuPanel menuPanel, GamePanel gamePanel, JFrame frame) {
+    public ElevatorPanel(GameGraphics gameGraphics, GamePanel gamePanel, JFrame frame) {
         this.gamePanel = gamePanel;
         this.frame = frame;
 
@@ -34,7 +34,6 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
         requestFocusInWindow();
         addKeyListener(this);
 
-        GameGraphics gameGraphics = (GameGraphics) menuPanel.getComponent(0);
         this.standingImage1 = gameGraphics.getStandingImage1();
         this.standingImage2 = gameGraphics.getStandingImage2();
         this.walkingImageRight = gameGraphics.getWalkingImageRight();
@@ -66,14 +65,9 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
         int wall3Height = getHeight();
         wall3 = new Rectangle(wall3X, wall3Y, wall3Width, wall3Height);
 
-        walkingTimer = new Timer(100, e -> updateWalkingAnimation());
+        walkingTimer = new Timer(0, e -> updateWalkingAnimation());
 
         addComponentListener(this);
-
-        System.out.println("Panel Height: " + getHeight());
-        System.out.println("Standing Image Height: " + standingImage1.getHeight());
-
-        System.out.println("ElevatorPanel initialized.");
     }
 
     @Override
@@ -111,16 +105,15 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
 
     private void updateWalkingAnimation() {
         if (isWalking) {
-            System.out.println("Updating walking animation. Direction: " + direction);
             switch (direction) {
                 case "left":
                     if (!wall.intersects(playerLabel.getBounds())) {
-                        playerX -= 10;
+                        playerX -= 15;
                         playerLabel.setIcon(walkingImageRight);
                     }
                     break;
                 case "right":
-                    playerX += 10;
+                    playerX += 15;
                     playerLabel.setIcon(walkingImageLeft);
                     break;
             }
@@ -145,7 +138,6 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
 
     @Override
     public void keyPressed(KeyEvent e) {
-        System.out.println("Key pressed: " + KeyEvent.getKeyText(e.getKeyCode()));
         switch (e.getKeyCode()) {
             case KeyEvent.VK_LEFT:
                 direction = "left";
@@ -160,7 +152,6 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
 
     @Override
     public void keyReleased(KeyEvent e) {
-        System.out.println("Key released: " + KeyEvent.getKeyText(e.getKeyCode()));
         switch (e.getKeyCode()) {
             case KeyEvent.VK_LEFT:
             case KeyEvent.VK_RIGHT:
@@ -176,7 +167,6 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
         if (!isWalking) {
             isWalking = true;
             walkingTimer.start();
-            System.out.println("Started walking.");
         }
     }
 
@@ -192,7 +182,6 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
                 playerLabel.setIcon(new ImageIcon(standingImage1));
             }
             playerLabel.setBounds(playerX, playerY, playerLabel.getIcon().getIconWidth(), playerLabel.getIcon().getIconHeight());
-            System.out.println("Stopped walking.");
         }
         repaint();
     }
@@ -204,7 +193,7 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
         g.fillRect(0, 0, getWidth(), getHeight());
 
         if (elevatorImage != null) {
-            g.drawImage(elevatorImage, getWidth() - elevatorImage.getWidth() +100, getHeight() - elevatorImage.getHeight() +40, this);
+            g.drawImage(elevatorImage, getWidth() - elevatorImage.getWidth() + 100, getHeight() - elevatorImage.getHeight() +40, this);
         }
 
         g.setColor(Color.BLACK);
@@ -216,9 +205,9 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
 
     private void switchToGamePanel() {
         walkingTimer.stop();
+        gamePanel.startGame();
         frame.setContentPane(gamePanel);
         frame.revalidate();
         frame.repaint();
-        System.out.println("Switched to GamePanel.");
     }
 }
