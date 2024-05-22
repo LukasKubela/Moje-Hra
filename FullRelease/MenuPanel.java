@@ -5,6 +5,7 @@ import java.awt.*;
 
 public class MenuPanel extends JPanel {
     private final JFrame frame;
+    private GameGraphics gameGraphics;
 
     public MenuPanel(JFrame frame) {
         this.frame = frame;
@@ -13,8 +14,7 @@ public class MenuPanel extends JPanel {
 
     private void initializeUI() {
         setLayout(new BorderLayout());
-
-        GameGraphics gameGraphics = new GameGraphics();
+        gameGraphics = new GameGraphics();
         add(gameGraphics, BorderLayout.CENTER);
 
         JButton playButton = gameGraphics.getPlayButton();
@@ -25,7 +25,7 @@ public class MenuPanel extends JPanel {
 
     private void switchToElevatorPanel() {
         GamePanel gamePanel = new GamePanel(frame, this);
-        ElevatorPanel elevatorPanel = new ElevatorPanel(this, gamePanel, frame);
+        ElevatorPanel elevatorPanel = new ElevatorPanel(gameGraphics, gamePanel, frame);
         updateContentPane(elevatorPanel);
     }
 
@@ -34,5 +34,9 @@ public class MenuPanel extends JPanel {
         frame.setContentPane(newPanel);
         frame.revalidate();
         frame.repaint();
+    }
+
+    public GameGraphics getGameGraphics() {
+        return gameGraphics;
     }
 }
