@@ -2,6 +2,7 @@ package FullRelease;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Random;
 
 public class GamePanel extends JPanel {
@@ -13,7 +14,7 @@ public class GamePanel extends JPanel {
     private int playerLives = 3;
     private int enemyLives = 3;
     private boolean gameOver = false;
-    private boolean playerStarts;
+    private boolean playerStarts = true;
     private int shotCount = 0;
     private JLabel coinsLabel;
     private boolean hasMagnifyingGlass = false;
@@ -26,14 +27,26 @@ public class GamePanel extends JPanel {
     private boolean hasFreezeAbility = false;
     private final Freeze freeze = new Freeze();
     private int currentRound = 0;
-    private boolean secondShot = false; // Track the second shot when freeze is used
+    private boolean secondShot = false;
+    private BufferedImage casinoChip;
+    private JLabel shootSign;
 
     public GamePanel(JFrame frame, MenuPanel menuPanel) {
         this.frame = frame;
         this.menuPanel = menuPanel;
         initUI();
-        randomStart();
         initializeRounds();
+        applyRoundSettings();
+    }
+
+    public void startGame() {
+        gameOver = false;
+        playerLives = 3;
+        enemyLives = 3;
+        shotCount = 0;
+        currentRound = 0;
+        playerStarts = true;
+        updateTurnLabel("Player");
         applyRoundSettings();
     }
 
@@ -57,7 +70,7 @@ public class GamePanel extends JPanel {
         shopButton.setVisible(true);
         magnifyingGlassButton.setVisible(false);
         healthPotionButton.setVisible(false);
-        freezeAbilityButton.setVisible(true);
+        freezeAbilityButton.setVisible(false);
     }
 
     private void enableShopAndItems() {
@@ -91,28 +104,20 @@ public class GamePanel extends JPanel {
         System.out.println("DEBUG: Magnifying Glass set for Round 0 - " + (roundLive[0] ? "LIVE" : "BLANK") + (forcedLive ? " (Forced)" : ""));
     }
 
-    private void randomStart() {
-        playerStarts = random.nextBoolean();
-        if (playerStarts) {
-            updateTurnLabel("Player");
-        } else {
-            updateTurnLabel("Enemy");
-        }
-        if (!playerStarts) {
-            delayEnemyTurn();
-        }
-    }
-
     private void updateTurnLabel(String text) {
         SwingUtilities.invokeLater(() -> {
             turnLabel.setText("Turn: " + text);
             boolean isPlayerTurn = text.equals("Player");
             playerButton.setEnabled(isPlayerTurn);
             enemyButton.setEnabled(isPlayerTurn);
+            playerButton.setVisible(isPlayerTurn);
+            enemyButton.setVisible(isPlayerTurn);
             magnifyingGlassButton.setEnabled(isPlayerTurn && hasMagnifyingGlass);
             healthPotionButton.setEnabled(isPlayerTurn && healthPotion.getCount() > 0 && playerLives < 3);
             freezeAbilityButton.setEnabled(isPlayerTurn && hasFreezeAbility);
             shopButton.setEnabled(isPlayerTurn);
+            shopButton.setVisible(isPlayerTurn);
+            shootSign.setVisible(isPlayerTurn);
         });
     }
 
@@ -144,6 +149,27 @@ public class GamePanel extends JPanel {
         setupBall(75, Color.RED);
         updateHealthPotionButtonState();
         shopButton.setVisible(false);
+        loadCasinoChip();
+        setupShootLabel();
+    }
+
+    private void loadCasinoChip() {
+        GameGraphics gameGraphics = menuPanel.getGameGraphics();
+        casinoChip = gameGraphics.getCasinoChip();
+    }
+
+    private void setupShootLabel() {
+        GameGraphics gameGraphics = menuPanel.getGameGraphics();
+        BufferedImage shootSignImage = gameGraphics.getShootSignImage();
+
+        shootSign = new JLabel(new ImageIcon(shootSignImage));
+
+        int frameCenterX = frame.getWidth() / 2;
+
+        shootSign.setBounds(frameCenterX - 55, 150, shootSignImage.getWidth(), shootSignImage.getHeight());
+
+        add(shootSign);
+
     }
 
     private void setupBall(int x, Color color) {
@@ -152,7 +178,7 @@ public class GamePanel extends JPanel {
         ball.setBackground(color);
 
         int adjustedX = frame.getWidth() / 2 + x - 25;
-        ball.setBounds(adjustedX, 250, 50, 50);
+        ball.setBounds(adjustedX, 400, 50, 50);
         this.add(ball);
     }
 
@@ -178,37 +204,42 @@ public class GamePanel extends JPanel {
         enemyLivesLabel.setBounds(frameCenterX + 25, 10, 150, 30);
         add(enemyLivesLabel);
 
-        coinsLabel = new JLabel("Coins: " + FullRelease.GamePanel.CoinManager.getCoins());
-        coinsLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        coinsLabel.setBounds(frameCenterX - 75, 400, 150, 30);
+        coinsLabel = new JLabel("" + FullRelease.GamePanel.CoinManager.getCoins());
+        coinsLabel.setFont(new Font("Arial", Font.BOLD, 40));
+        coinsLabel.setForeground(Color.YELLOW);
+        coinsLabel.setBounds(150, 45, 150, 30);
         add(coinsLabel);
 
-        playerButton = new JButton("YOU");
-        playerButton.setBounds(frameCenterX - 100, 200, 100, 30);
+        GameGraphics gameGraphics = menuPanel.getGameGraphics();
+        playerButton = gameGraphics.getPlayerButton();
+        enemyButton = gameGraphics.getEnemyButton();
+        shopButton = gameGraphics.getShopButton();
+
         playerButton.addActionListener(e -> {
             if (!gameOver && playerStarts) {
                 playRussianRoulette(true);
             }
         });
-        add(playerButton);
 
-        enemyButton = new JButton("ENEMY");
-        enemyButton.setBounds(frameCenterX + 25, 200, 100, 30);
         enemyButton.addActionListener(e -> {
             if (!gameOver && playerStarts) {
                 playRussianRoulette(false);
                 prepareNextTurn(false);
             }
         });
+
+        shopButton.addActionListener(e -> {
+            switchToShop();
+            shopButton.setIcon(new ImageIcon(getClass().getResource("/SHOP Button.png")));
+        });
+
+        playerButton.setBounds(frameCenterX - 87, 300, playerButton.getPreferredSize().width, playerButton.getPreferredSize().height);
+        add(playerButton);
+
+        enemyButton.setBounds(frameCenterX + 40, 300, enemyButton.getPreferredSize().width, enemyButton.getPreferredSize().height);
         add(enemyButton);
 
-        playerButton.setEnabled(playerStarts);
-        enemyButton.setEnabled(playerStarts);
-
-        shopButton = new JButton("Shop");
-        shopButton.setBounds(frameCenterX - 75, 450, 150, 30);
-        shopButton.addActionListener(e -> switchToShop());
-        shopButton.setVisible(false);
+        shopButton.setBounds(frameCenterX - 75, 500, shopButton.getPreferredSize().width, shopButton.getPreferredSize().height);
         add(shopButton);
 
         magnifyingGlassButton = new JButton("Use Magnifying Glass");
@@ -373,7 +404,7 @@ public class GamePanel extends JPanel {
     }
 
     private void updateCoinsLabel() {
-        SwingUtilities.invokeLater(() -> coinsLabel.setText("Coins: " + FullRelease.GamePanel.CoinManager.getCoins()));
+        SwingUtilities.invokeLater(() -> coinsLabel.setText("" + FullRelease.GamePanel.CoinManager.getCoins()));
     }
 
     private void handleGameOver(boolean playerDied) {
@@ -383,7 +414,7 @@ public class GamePanel extends JPanel {
         } else {
             gameOverMessage = "YOU WIN!";
             System.out.println("DEBUG: Player wins updated. Player Wins: " + Game.playerWins);
-            applyRoundSettings(); // Ensure the round settings are applied immediately after a win
+            applyRoundSettings();
         }
         updateStatusGameOver(gameOverMessage);
         playerButton.setEnabled(false);
@@ -445,7 +476,8 @@ public class GamePanel extends JPanel {
     }
 
     private void switchToElevatorPanel() {
-        ElevatorPanel elevatorPanel = new ElevatorPanel(menuPanel, this, frame); // this refers to current GamePanel instance
+        GameGraphics gameGraphics = menuPanel.getGameGraphics();
+        ElevatorPanel elevatorPanel = new ElevatorPanel(gameGraphics, this, frame);
         frame.setContentPane(elevatorPanel);
         frame.revalidate();
         frame.repaint();
@@ -468,11 +500,12 @@ public class GamePanel extends JPanel {
     }
 
     public void updateCoinsDisplay() {
-        SwingUtilities.invokeLater(() -> coinsLabel.setText("Coins: " + FullRelease.GamePanel.CoinManager.getCoins()));
+        SwingUtilities.invokeLater(() -> coinsLabel.setText("" + FullRelease.GamePanel.CoinManager.getCoins()));
     }
 
     private void switchToShop() {
-        FullRelease.ShopPanel shopPanel = new FullRelease.ShopPanel(frame, this);
+        GameGraphics gameGraphics = menuPanel.getGameGraphics();
+        FullRelease.ShopPanel shopPanel = new FullRelease.ShopPanel(frame, this, gameGraphics);
         frame.setContentPane(shopPanel);
         frame.revalidate();
         frame.repaint();
@@ -481,5 +514,8 @@ public class GamePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        if (casinoChip != null) {
+            g.drawImage(casinoChip, 10, 10, null);
+        }
     }
 }
