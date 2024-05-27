@@ -3,7 +3,7 @@ package FullRelease;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
 import javax.imageio.ImageIO;
 
 public class Game {
@@ -17,16 +17,19 @@ public class Game {
             frame.setResizable(false);
             frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-            // Load the icon image
-            try (InputStream is = Game.class.getResourceAsStream("/Revolver 1.png")) {
-                if (is != null) {
-                    Image iconImage = ImageIO.read(is);
+            // Load the icon image using ImageIO
+            URL iconURL = Game.class.getResource("/Revolver 1(48 x 48).png");
+            if (iconURL != null) {
+                System.out.println("Image loaded");
+                try {
+                    Image iconImage = ImageIO.read(iconURL);
                     frame.setIconImage(iconImage);
-                } else {
-                    System.err.println("Icon image not found");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.out.println("Failed to load icon image");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } else {
+                System.out.println("Icon image not found at: " + iconURL);
             }
 
             MenuPanel menuPanel = new MenuPanel(frame);
