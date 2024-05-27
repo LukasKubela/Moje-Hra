@@ -4,12 +4,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Random;
+import javax.swing.Timer;
+import static FullRelease.Game.playerWins;
 
 public class GamePanel extends JPanel {
     private final JFrame frame;
-    private final MenuPanel menuPanel;
     private JButton playerButton, enemyButton, shopButton;
-    private JLabel statusLabel, turnLabel, playerLivesLabel, enemyLivesLabel;
+    private JLabel statusLabel, turnLabel;
     private final Random random = new Random();
     private int playerLives = 3;
     private int enemyLives = 3;
@@ -23,17 +24,27 @@ public class GamePanel extends JPanel {
     private final MagnifyingGlass magnifyingGlass = new MagnifyingGlass();
     private final HealthPotion healthPotion = new HealthPotion();
     private JButton healthPotionButton;
-    private JButton freezeAbilityButton;
     private boolean hasFreezeAbility = false;
     private final Freeze freeze = new Freeze();
+    private JButton freezeAbilityButton;
     private int currentRound = 0;
     private boolean secondShot = false;
     private BufferedImage casinoChip;
     private JLabel shootSign;
+    private JLabel playerHealthLabel, enemyHealthLabel;
+    private final GameGraphics gameGraphics;
+    private JLabel lampLabel;
+    private JLabel revolver1Label;
+    private JLabel revolver2Label;
+    private JLabel sparklingEffect1Label;
+    private JLabel sparklingEffect2Label;
+    private JLabel playerStandingLabel;
+    private JLabel enemyStandingLabel;
 
     public GamePanel(JFrame frame, MenuPanel menuPanel) {
         this.frame = frame;
-        this.menuPanel = menuPanel;
+        this.gameGraphics = menuPanel.getGameGraphics();
+        setBackground(Color.BLACK);
         initUI();
         initializeRounds();
         applyRoundSettings();
@@ -48,37 +59,51 @@ public class GamePanel extends JPanel {
         playerStarts = true;
         updateTurnLabel("Player");
         applyRoundSettings();
+        shootSign.setVisible(true);
+        updateHealthIcons();
+        lampLabel.setVisible(true);
+        hideRevolvers();
     }
 
     public void applyRoundSettings() {
-        System.out.println("DEBUG: Applying round settings. Player Wins: " + Game.playerWins);
-        if (Game.playerWins == 0) {
+        System.out.println("DEBUG: Applying round settings. Player Wins: " + playerWins);
+        if (playerWins == 0) {
             disableShopAndItems();
-        } else if (Game.playerWins == 1) {
+        } else if (playerWins == 1) {
             enableShopAndItems();
-        } else if (Game.playerWins == 2) {
+        } else if (playerWins == 2) {
             playerLives = 1;
             enemyLives = 1;
-            playerLivesLabel.setText("Player Lives: " + playerLives);
-            enemyLivesLabel.setText("Enemy Lives: " + enemyLives);
+            updateHealthIcons();
             enableShopAndItems();
         }
     }
 
-    private void disableShopAndItems() {
-        System.out.println("DEBUG: Disabling shop and items.");
-        shopButton.setVisible(true);
-        magnifyingGlassButton.setVisible(false);
-        healthPotionButton.setVisible(false);
-        freezeAbilityButton.setVisible(false);
+    public void updateItemVisibility() {
+        magnifyingGlassButton.setVisible(hasMagnifyingGlass);
+        healthPotionButton.setVisible(healthPotion.getCount() > 0);
+        freezeAbilityButton.setVisible(hasFreezeAbility);
     }
 
-    private void enableShopAndItems() {
-        System.out.println("DEBUG: Enabling shop and items.");
-        shopButton.setVisible(true);
-        magnifyingGlassButton.setVisible(true);
-        healthPotionButton.setVisible(true);
-        freezeAbilityButton.setVisible(true);
+    public void setHasMagnifyingGlass(boolean has) {
+        hasMagnifyingGlass = has;
+        magnifyingGlass.acquireMagnifyingGlass();
+        magnifyingGlassButton.setEnabled(has);
+        updateItemVisibility();
+    }
+
+    public void setHasHealthPotion(boolean has) {
+        if (has) {
+            healthPotion.addPotion();
+        }
+        healthPotionButton.setEnabled(healthPotion.getCount() > 0);
+        updateItemVisibility();
+    }
+
+    public void setHasFreezeAbility(boolean has) {
+        hasFreezeAbility = has;
+        freezeAbilityButton.setEnabled(has);
+        updateItemVisibility();
     }
 
     private void initializeRounds() {
@@ -116,8 +141,7 @@ public class GamePanel extends JPanel {
             healthPotionButton.setEnabled(isPlayerTurn && healthPotion.getCount() > 0 && playerLives < 3);
             freezeAbilityButton.setEnabled(isPlayerTurn && hasFreezeAbility);
             shopButton.setEnabled(isPlayerTurn);
-            shopButton.setVisible(isPlayerTurn);
-            shootSign.setVisible(isPlayerTurn);
+            shopButton.setVisible(isPlayerTurn && playerWins > 0);
         });
     }
 
@@ -145,21 +169,24 @@ public class GamePanel extends JPanel {
     private void initUI() {
         setLayout(null);
         setupComponents();
-        setupBall(-50, Color.BLUE);
-        setupBall(75, Color.RED);
+        setupPlayerStanding();
         updateHealthPotionButtonState();
         shopButton.setVisible(false);
         loadCasinoChip();
         setupShootLabel();
+        setupHealthIcons();
+        updateHealthIcons();
+        setupLamp();
+        setupRevolver1();
+        setupRevolver2();
+        setupSparklingEffects();
     }
 
     private void loadCasinoChip() {
-        GameGraphics gameGraphics = menuPanel.getGameGraphics();
         casinoChip = gameGraphics.getCasinoChip();
     }
 
     private void setupShootLabel() {
-        GameGraphics gameGraphics = menuPanel.getGameGraphics();
         BufferedImage shootSignImage = gameGraphics.getShootSignImage();
 
         shootSign = new JLabel(new ImageIcon(shootSignImage));
@@ -169,18 +196,46 @@ public class GamePanel extends JPanel {
         shootSign.setBounds(frameCenterX - 55, 150, shootSignImage.getWidth(), shootSignImage.getHeight());
 
         add(shootSign);
-
     }
 
-    private void setupBall(int x, Color color) {
-        JLabel ball = new JLabel();
-        ball.setOpaque(true);
-        ball.setBackground(color);
-
-        int adjustedX = frame.getWidth() / 2 + x - 25;
-        ball.setBounds(adjustedX, 400, 50, 50);
-        this.add(ball);
+    private void setupLamp() {
+        BufferedImage lampImage = gameGraphics.getLamp();
+        lampLabel = new JLabel(new ImageIcon(lampImage));
+        int frameCenterX = frame.getWidth() / 2;
+        lampLabel.setBounds(frameCenterX - 90, 0, lampImage.getWidth(), lampImage.getHeight());
+        add(lampLabel);
     }
+
+    private void setupRevolver1() {
+        BufferedImage revolverImage = gameGraphics.getRevolver1Image();
+        revolver1Label = new JLabel(new ImageIcon(revolverImage));
+        revolver1Label.setBounds(668, 375, revolverImage.getWidth(), revolverImage.getHeight());
+        revolver1Label.setVisible(false);
+        add(revolver1Label);
+    }
+
+    private void setupRevolver2() {
+        BufferedImage revolverImage = gameGraphics.getRevolver2Image();
+        revolver2Label = new JLabel(new ImageIcon(revolverImage));
+        revolver2Label.setBounds(668, 375, revolverImage.getWidth(), revolverImage.getHeight());
+        revolver2Label.setVisible(false);
+        add(revolver2Label);
+    }
+
+    private void setupPlayerStanding() {
+        BufferedImage playerImage = gameGraphics.getStandingImage1();
+        BufferedImage enemyImage = gameGraphics.getStandingImage2();
+
+        playerStandingLabel = new JLabel(new ImageIcon(playerImage));
+        enemyStandingLabel = new JLabel(new ImageIcon(enemyImage));
+
+        playerStandingLabel.setBounds(470, 300, playerImage.getWidth(), playerImage.getHeight());
+        enemyStandingLabel.setBounds(775, 300, enemyImage.getWidth(), enemyImage.getHeight());
+
+        add(playerStandingLabel);
+        add(enemyStandingLabel);
+    }
+
 
     private void setupComponents() {
         setLayout(null);
@@ -188,21 +243,15 @@ public class GamePanel extends JPanel {
 
         statusLabel = new JLabel("Waiting", SwingConstants.CENTER);
         statusLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        statusLabel.setBounds(frameCenterX - 75, 100, 150, 30);
+        statusLabel.setBounds(frameCenterX + 150, 100, 150, 30);
+        statusLabel.setForeground(Color.WHITE);
         add(statusLabel);
 
         turnLabel = new JLabel("Turn: Player", SwingConstants.CENTER);
         turnLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        turnLabel.setBounds(frameCenterX - 75, 50, 150, 30);
+        turnLabel.setBounds(frameCenterX + 150, 50, 150, 30);
+        turnLabel.setForeground(Color.WHITE);
         add(turnLabel);
-
-        playerLivesLabel = new JLabel("Player Lives: " + playerLives);
-        playerLivesLabel.setBounds(frameCenterX - 175, 10, 150, 30);
-        add(playerLivesLabel);
-
-        enemyLivesLabel = new JLabel("Enemy Lives: " + enemyLives);
-        enemyLivesLabel.setBounds(frameCenterX + 25, 10, 150, 30);
-        add(enemyLivesLabel);
 
         coinsLabel = new JLabel("" + FullRelease.GamePanel.CoinManager.getCoins());
         coinsLabel.setFont(new Font("Arial", Font.BOLD, 40));
@@ -210,19 +259,20 @@ public class GamePanel extends JPanel {
         coinsLabel.setBounds(150, 45, 150, 30);
         add(coinsLabel);
 
-        GameGraphics gameGraphics = menuPanel.getGameGraphics();
         playerButton = gameGraphics.getPlayerButton();
         enemyButton = gameGraphics.getEnemyButton();
         shopButton = gameGraphics.getShopButton();
 
         playerButton.addActionListener(e -> {
             if (!gameOver && playerStarts) {
+                hideButtons(); // Hide all buttons when player button is pressed
                 playRussianRoulette(true);
             }
         });
 
         enemyButton.addActionListener(e -> {
             if (!gameOver && playerStarts) {
+                hideButtons(); // Hide all buttons when enemy button is pressed
                 playRussianRoulette(false);
                 prepareNextTurn(false);
             }
@@ -233,62 +283,172 @@ public class GamePanel extends JPanel {
             shopButton.setIcon(new ImageIcon(getClass().getResource("/SHOP Button.png")));
         });
 
-        playerButton.setBounds(frameCenterX - 87, 300, playerButton.getPreferredSize().width, playerButton.getPreferredSize().height);
+        playerButton.setBounds(533, 300, playerButton.getPreferredSize().width, playerButton.getPreferredSize().height);
         add(playerButton);
 
-        enemyButton.setBounds(frameCenterX + 40, 300, enemyButton.getPreferredSize().width, enemyButton.getPreferredSize().height);
+        enemyButton.setBounds(860, 300, enemyButton.getPreferredSize().width, enemyButton.getPreferredSize().height);
         add(enemyButton);
 
         shopButton.setBounds(frameCenterX - 75, 500, shopButton.getPreferredSize().width, shopButton.getPreferredSize().height);
         add(shopButton);
 
-        magnifyingGlassButton = new JButton("Use Magnifying Glass");
-        magnifyingGlassButton.setBounds(275, 400, 200, 30);
+        magnifyingGlassButton = createItemButton(gameGraphics.getMagnifyingGlassImage(), 275);
         magnifyingGlassButton.addActionListener(e -> useMagnifyingGlass());
-        magnifyingGlassButton.setEnabled(false);
+        magnifyingGlassButton.setVisible(false);
         add(magnifyingGlassButton);
 
-        healthPotionButton = new JButton("Use Health Potion");
-        healthPotionButton.setBounds(275, 350, 200, 30);
+        healthPotionButton = createItemButton(gameGraphics.getHealthPotionImage(), 1075);
         healthPotionButton.addActionListener(e -> useHealthPotion());
-        healthPotionButton.setEnabled(false);
+        healthPotionButton.setVisible(false);
         add(healthPotionButton);
 
-        freezeAbilityButton = new JButton("Use Freeze");
-        freezeAbilityButton.setBounds(275, 300, 200, 30);
+        freezeAbilityButton = createItemButton(gameGraphics.getFreezeImage(), 675);
         freezeAbilityButton.addActionListener(e -> useFreezeAbility());
-        freezeAbilityButton.setEnabled(false);
+        freezeAbilityButton.setVisible(false);
         add(freezeAbilityButton);
+    }
+
+    private void setupSparklingEffects() {
+        BufferedImage sparklingEffectImage1 = gameGraphics.getSparklingEffect1();
+        sparklingEffect1Label = new JLabel(new ImageIcon(sparklingEffectImage1));
+        sparklingEffect1Label.setBounds(revolver1Label.getX(), revolver1Label.getY(), sparklingEffectImage1.getWidth(), sparklingEffectImage1.getHeight());
+        sparklingEffect1Label.setVisible(false); // Initially hidden
+        add(sparklingEffect1Label);
+
+        BufferedImage sparklingEffectImage2 = gameGraphics.getSparklingEffect2();
+        sparklingEffect2Label = new JLabel(new ImageIcon(sparklingEffectImage2));
+        sparklingEffect2Label.setBounds(revolver2Label.getX(), revolver2Label.getY(), sparklingEffectImage2.getWidth(), sparklingEffectImage2.getHeight());
+        sparklingEffect2Label.setVisible(false); // Initially hidden
+        add(sparklingEffect2Label);
+
+        // Debug information
+        System.out.println("Initial setup for sparkling effects completed.");
+    }
+
+    public void updateSparklingEffect1Coordinates(int x, int y) {
+        sparklingEffect1Label.setBounds(x, y, sparklingEffect1Label.getWidth(), sparklingEffect1Label.getHeight());
+        sparklingEffect1Label.setVisible(true);  // Make sure it's visible
+        System.out.println("DEBUG: Updated SparklingEffect1 coordinates to x=" + x + ", y=" + y);
+    }
+
+    public void updateSparklingEffect2Coordinates(int x, int y) {
+        sparklingEffect2Label.setBounds(x, y, sparklingEffect2Label.getWidth(), sparklingEffect2Label.getHeight());
+        sparklingEffect2Label.setVisible(true);  // Make sure it's visible
+        System.out.println("DEBUG: Updated SparklingEffect2 coordinates to x=" + x + ", y=" + y);
+    }
+
+    private boolean isWithinBounds(int x, int y, JLabel label) {
+        int panelWidth = getWidth();
+        int panelHeight = getHeight();
+        int labelWidth = label.getWidth();
+        int labelHeight = label.getHeight();
+        return (x >= 0 && x + labelWidth <= panelWidth) && (y >= 0 && y + labelHeight <= panelHeight);
+    }
+
+    private void showRevolver1WithSparkle() {
+        int x = 785;
+        int y = 360;
+        if (isWithinBounds(x, y, sparklingEffect1Label)) {
+            updateSparklingEffect1Coordinates(x, y);
+        } else {
+            System.out.println("Coordinates out of bounds for SparklingEffect1.");
+        }
+        revolver1Label.setVisible(true);
+    }
+
+    private void showRevolver2WithSparkle() {
+        int x = 625; // Example coordinates
+        int y = 360;
+        if (isWithinBounds(x, y, sparklingEffect2Label)) {
+            updateSparklingEffect2Coordinates(x, y);
+        } else {
+            System.out.println("Coordinates out of bounds for SparklingEffect2.");
+        }
+        revolver2Label.setVisible(true);
+    }
+
+    private void setupHealthIcons() {
+        playerHealthLabel = new JLabel();
+        playerHealthLabel.setBounds(400, 375, 50, 75);
+        add(playerHealthLabel);
+
+        enemyHealthLabel = new JLabel();
+        enemyHealthLabel.setBounds(1020, 375, 50, 75);
+        add(enemyHealthLabel);
+
+        updateHealthIcons();
+    }
+
+    private void updateHealthIcons() {
+        playerHealthLabel.setIcon(getHealthIcon(playerLives));
+        enemyHealthLabel.setIcon(getHealthIcon(enemyLives));
+    }
+
+    private Icon getHealthIcon(int lives) {
+        return switch (lives) {
+            case 1 -> new ImageIcon(gameGraphics.getHealthClock1());
+            case 2 -> new ImageIcon(gameGraphics.getHealthClock2());
+            case 3 -> new ImageIcon(gameGraphics.getHealthClock3());
+            default -> null;
+        };
+    }
+
+    private JButton createItemButton(BufferedImage image, int x) {
+        JButton button = new JButton(new ImageIcon(image));
+        button.setBounds(x, 700, image.getWidth(), image.getHeight());
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        return button;
     }
 
     public void useFreezeAbility() {
         if (hasFreezeAbility && !freeze.isFrozen() && playerStarts) {
             freeze.activateFreeze();
             updateStatus("Freeze activated! Enemy turn skipped.", true);
+            freezeAbilityButton.setVisible(false);
+            hasFreezeAbility = false;
+            updateItemVisibility();
             prepareNextTurn(true);
         } else {
             updateStatus("Cannot use Freeze Time!", false);
         }
     }
 
-    public void setHasFreezeAbility(boolean has) {
-        hasFreezeAbility = has;
-        freezeAbilityButton.setEnabled(has);
-    }
-
     public void useMagnifyingGlass() {
         if (hasMagnifyingGlass) {
             String previewMessage = magnifyingGlass.checkRound();
             JOptionPane.showMessageDialog(frame, previewMessage, "Magnifying Glass Result", JOptionPane.INFORMATION_MESSAGE);
+            magnifyingGlassButton.setVisible(false);
+            hasMagnifyingGlass = false;
+            updateItemVisibility();
         } else {
             JOptionPane.showMessageDialog(frame, "No magnifying glass available!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public void setHasMagnifyingGlass(boolean has) {
-        hasMagnifyingGlass = has;
-        magnifyingGlass.acquireMagnifyingGlass();
-        magnifyingGlassButton.setEnabled(has);
+    public void useHealthPotion() {
+        if (playerStarts && healthPotion.getCount() > 0 && playerLives < 3) {
+            boolean used = healthPotion.usePotion();
+            if (used) {
+                playerLives++;
+                updateStatus("Health restored by 1!", true);
+                healthPotionButton.setVisible(false);
+                updateHealthIcons(); // Update the health icons
+            }
+        } else {
+            String message = "It's not your turn!" + (healthPotion.getCount() > 0 ? "" : " No health potions available!");
+            updateStatus(message, false);
+        }
+        updateHealthPotionButtonState();
+    }
+
+    private void updateHealthPotionButtonState() {
+        healthPotionButton.setEnabled(canUseHealthPotion());
+    }
+
+    private boolean canUseHealthPotion() {
+        return playerStarts && healthPotion.getCount() > 0 && playerLives < 3;
     }
 
     private void updateStatus(String text, boolean isSurvived) {
@@ -309,25 +469,140 @@ public class GamePanel extends JPanel {
         });
     }
 
+    private void showRevolver1() {
+        revolver1Label.setVisible(true);
+        sparklingEffect1Label.setVisible(false);
+        System.out.println("DEBUG: Showing revolver 1 without sparkle");
+    }
+
+    private void showRevolver2() {
+        revolver2Label.setVisible(true);
+        sparklingEffect2Label.setVisible(false);
+        System.out.println("DEBUG: Showing revolver 2 without sparkle");
+    }
+
+    private void hideRevolvers() {
+        revolver1Label.setVisible(false);
+        sparklingEffect1Label.setVisible(false);
+        revolver2Label.setVisible(false);
+        sparklingEffect2Label.setVisible(false);
+        System.out.println("DEBUG: Hiding all revolvers");
+    }
+
+    private void hideSparklingEffects() {
+        sparklingEffect1Label.setVisible(false);
+        sparklingEffect2Label.setVisible(false);
+        System.out.println("DEBUG: Hiding sparkling effects");
+    }
+
+    private void showRevolverWithSparkle(boolean isPlayer, boolean currentRoundIsLive) {
+        if (currentRoundIsLive) {
+            if (isPlayer) {
+                showRevolver2WithSparkle();
+            } else {
+                showRevolver1WithSparkle();
+            }
+        } else {
+            if (isPlayer) {
+                showRevolver2();
+            } else {
+                showRevolver1();
+            }
+        }
+    }
+
+    private void hideButtonsWithDelay() {
+        hideButtons();
+
+        Timer showButtonsTimer = new Timer(3000, e -> {
+            showButtons();
+            ((Timer) e.getSource()).stop();
+        });
+        showButtonsTimer.setRepeats(false);
+        showButtonsTimer.start();
+    }
+
+    private void hideButtons() {
+        playerButton.setVisible(false);
+        enemyButton.setVisible(false);
+        shopButton.setVisible(false);
+        magnifyingGlassButton.setVisible(false);
+        healthPotionButton.setVisible(false);
+        freezeAbilityButton.setVisible(false);
+    }
+
+    private void showButtons() {
+        playerButton.setVisible(true);
+        enemyButton.setVisible(true);
+        shopButton.setVisible(playerWins > 0);
+        magnifyingGlassButton.setVisible(hasMagnifyingGlass);
+        healthPotionButton.setVisible(healthPotion.getCount() > 0);
+        freezeAbilityButton.setVisible(hasFreezeAbility);
+    }
+
     private void playRussianRoulette(boolean isPlayer) {
         if (gameOver) {
             return;
         }
+        hideRevolvers();
         boolean shotFired = random.nextInt(7 - shotCount) == 0;
         shotCount++;
 
+        System.out.println("DEBUG: Shot fired: " + shotFired);
+        System.out.println("DEBUG: Shot count: " + shotCount);
+
+        boolean currentRoundIsLive = roundLive[currentRound];
+        System.out.println("DEBUG: Current round " + currentRound + " is " + (currentRoundIsLive ? "LIVE" : "BLANK"));
+
         if (shotFired) {
-            triggerLiveShot(isPlayer);
+            if (isPlayer) {
+                playerLives--;
+                updateHealthIcons();
+                updateCoinsLabel();
+                FullRelease.GamePanel.CoinManager.addCoins(-1);
+            } else {
+                enemyLives--;
+                updateHealthIcons();
+                updateCoinsLabel();
+                FullRelease.GamePanel.CoinManager.addCoins(2);
+            }
+
+            // Check for game over
+            if (isPlayer && playerLives <= 0) {
+                gameOver = true;
+                updateStatus("Player died", false);
+                handleGameOver(true);
+            } else if (!isPlayer && enemyLives <= 0) {
+                gameOver = true;
+                updateStatus("Enemy died", false);
+                handleGameOver(false);
+            } else {
+                hideButtonsWithDelay();
+                updateStatus((isPlayer ? "Player" : "Enemy") + " was shot", currentRoundIsLive);
+                showRevolverWithSparkle(isPlayer, currentRoundIsLive);
+                Timer timer = new Timer(3000, e -> {
+                    hideRevolvers();
+                    hideSparklingEffects();
+                    prepareNextTurn(isPlayer);
+                });
+                timer.setRepeats(false);
+                timer.start();
+            }
             shotCount = 0;
         } else {
             if (shotCount == 6) {
-                triggerLiveShot(isPlayer);
-                shotCount = 0;
+                playRussianRoulette(isPlayer);
             } else {
                 updateStatus(isPlayer ? "Player survives." : "Enemy survives.", true);
                 prepareNextTurn(isPlayer || checkPlayerContinuation());
+                if (isPlayer) {
+                    showRevolver2();
+                } else {
+                    showRevolver1();
+                }
             }
         }
+
         advanceRound();
     }
 
@@ -348,7 +623,7 @@ public class GamePanel extends JPanel {
 
         boolean decidesToShootPlayer = random.nextInt(2) == 0;
 
-        Timer decisionDelay = new Timer(2000, e -> {
+        Timer decisionDelay = new Timer(1000, e -> {
             playRussianRoulette(!decidesToShootPlayer);
             ((Timer) e.getSource()).stop();
         });
@@ -365,40 +640,6 @@ public class GamePanel extends JPanel {
         delayTimer.start();
     }
 
-    private void triggerLiveShot(boolean isPlayer) {
-        boolean currentRoundIsLive = roundLive[currentRound];
-        System.out.println("DEBUG: Current round " + currentRound + " is " + (currentRoundIsLive ? "LIVE" : "BLANK"));
-
-        if (isPlayer) {
-            playerLives--;
-            playerLivesLabel.setText("Player Lives: " + playerLives);
-            updateCoinsLabel();
-            FullRelease.GamePanel.CoinManager.addCoins(-1);
-            if (playerLives <= 0) {
-                gameOver = true;
-                updateStatus("Player died", false);
-                handleGameOver(true);
-            } else {
-                updateStatus("Player was " + (currentRoundIsLive ? "shot" : "safe"), currentRoundIsLive);
-                prepareNextTurn(true);
-            }
-        } else {
-            enemyLives--;
-            enemyLivesLabel.setText("Enemy Lives: " + enemyLives);
-            updateCoinsLabel();
-            FullRelease.GamePanel.CoinManager.addCoins(2);
-            if (enemyLives <= 0) {
-                Game.playerWins++;
-                gameOver = true;
-                updateStatus("Enemy died", false);
-                handleGameOver(false);
-            } else {
-                updateStatus("Enemy was " + (currentRoundIsLive ? "shot" : "safe"), currentRoundIsLive);
-                prepareNextTurn(true);
-            }
-        }
-    }
-
     private boolean checkPlayerContinuation() {
         return playerStarts;
     }
@@ -413,7 +654,7 @@ public class GamePanel extends JPanel {
             gameOverMessage = "YOU DIED";
         } else {
             gameOverMessage = "YOU WIN!";
-            System.out.println("DEBUG: Player wins updated. Player Wins: " + Game.playerWins);
+            System.out.println("DEBUG: Player wins updated. Player Wins: " + playerWins);
             applyRoundSettings();
         }
         updateStatusGameOver(gameOverMessage);
@@ -422,7 +663,7 @@ public class GamePanel extends JPanel {
 
         new Timer(2000, e -> {
             if (!playerDied) {
-                if (Game.playerWins < 3) {
+                if (playerWins < 3) {
                     switchToElevatorPanel();
                 } else {
                     switchToMenu();
@@ -435,32 +676,20 @@ public class GamePanel extends JPanel {
         }).start();
     }
 
-    public void useHealthPotion() {
-        if (playerStarts && healthPotion.getCount() > 0 && playerLives < 3) {
-            boolean used = healthPotion.usePotion();
-            if (used) {
-                playerLives++;
-                playerLivesLabel.setText("Player Lives: " + playerLives);
-                updateStatus("Health restored by 1!", true);
-            }
-        } else {
-            String message = "It's not your turn!" + (healthPotion.getCount() > 0 ? "" : " No health potions available!");
-            updateStatus(message, false);
-        }
-        updateHealthPotionButtonState();
+    private void disableShopAndItems() {
+        System.out.println("DEBUG: Disabling shop and items.");
+        shopButton.setVisible(false);
+        magnifyingGlassButton.setVisible(false);
+        healthPotionButton.setVisible(false);
+        freezeAbilityButton.setVisible(false);
     }
 
-    private void updateHealthPotionButtonState() {
-        healthPotionButton.setEnabled(canUseHealthPotion());
-    }
-
-    private boolean canUseHealthPotion() {
-        return playerStarts && healthPotion.getCount() > 0 && playerLives < 3;
-    }
-
-    public void setHasHealthPotion() {
-        healthPotion.addPotion();
-        healthPotionButton.setEnabled(true);
+    private void enableShopAndItems() {
+        System.out.println("DEBUG: Enabling shop and items.");
+        shopButton.setVisible(true);
+        magnifyingGlassButton.setVisible(hasMagnifyingGlass);
+        healthPotionButton.setVisible(healthPotion.getCount() > 0);
+        freezeAbilityButton.setVisible(hasFreezeAbility);
     }
 
     private void updateStatusGameOver(String gameOverMessage) {
@@ -476,11 +705,11 @@ public class GamePanel extends JPanel {
     }
 
     private void switchToElevatorPanel() {
-        GameGraphics gameGraphics = menuPanel.getGameGraphics();
         ElevatorPanel elevatorPanel = new ElevatorPanel(gameGraphics, this, frame);
         frame.setContentPane(elevatorPanel);
         frame.revalidate();
         frame.repaint();
+        playerWins++;
     }
 
     public static class CoinManager {
@@ -504,8 +733,7 @@ public class GamePanel extends JPanel {
     }
 
     private void switchToShop() {
-        GameGraphics gameGraphics = menuPanel.getGameGraphics();
-        FullRelease.ShopPanel shopPanel = new FullRelease.ShopPanel(frame, this, gameGraphics);
+        ShopPanel shopPanel = new ShopPanel(frame, this, gameGraphics);
         frame.setContentPane(shopPanel);
         frame.revalidate();
         frame.repaint();
@@ -514,6 +742,8 @@ public class GamePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        g.setColor(getBackground());
+        g.fillRect(0, 0, getWidth(), getHeight());
         if (casinoChip != null) {
             g.drawImage(casinoChip, 10, 10, null);
         }

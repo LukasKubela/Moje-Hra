@@ -6,22 +6,28 @@ import java.awt.image.BufferedImage;
 
 public class ShopPanel extends JPanel {
     private final JFrame frame;
+    private final GamePanel gamePanel;
     private final JLabel coinsLabel;
     private final JLabel feedbackLabel;
     private final BufferedImage casinoChip;
     private final BufferedImage secondCasinoChip;
     private final BufferedImage thirdCasinoChip;
+    private final BufferedImage fourthCasinoChip;
     private final JLabel coinsPrice1;
-    private final int magnifyingGlassPrice = 3;
-    private final int freezePrice = 3;
+    private final int magnifyingGlassPrice = 10;
+    private final int freezePrice = 10;
     private final JLabel coinsPrice2;
+    private final JLabel coinsPrice3;
+    private final int HealthPotionPrice = 5;
 
-    public ShopPanel(JFrame frame, JPanel callingPanel, GameGraphics gameGraphics) {
+    public ShopPanel(JFrame frame, GamePanel callingPanel, GameGraphics gameGraphics) {
         this.frame = frame;
+        this.gamePanel = callingPanel;
         setLayout(null);
         this.casinoChip = gameGraphics.getCasinoChip();
         this.secondCasinoChip = gameGraphics.getSecondCasinoChip();
         this.thirdCasinoChip = gameGraphics.getThirdCasinoChip();
+        this.fourthCasinoChip = gameGraphics.getFourthCasinoChip();
 
         coinsLabel = new JLabel("" + FullRelease.GamePanel.CoinManager.getCoins());
         coinsLabel.setFont(new Font("Arial", Font.BOLD, 40));
@@ -36,26 +42,32 @@ public class ShopPanel extends JPanel {
 
         JButton magnifyingGlassButton = gameGraphics.getMagnifyingGlassButton();
         magnifyingGlassButton.setBounds(200, 300, 200, 200);
-        magnifyingGlassButton.addActionListener(e -> purchaseItem(magnifyingGlassPrice, (FullRelease.GamePanel) callingPanel, "magnifyingGlass"));
+        magnifyingGlassButton.addActionListener(e -> purchaseItem(magnifyingGlassPrice, "magnifyingGlass"));
         add(magnifyingGlassButton);
 
-        coinsPrice1 = new JLabel("3");
+        coinsPrice1 = new JLabel("10");
         coinsPrice1.setFont(new Font("Arial", Font.BOLD, 40));
         coinsPrice1.setForeground(Color.RED);
         coinsPrice1.setBounds(350, 535, 150, 30);
         add(coinsPrice1);
 
-        /*JButton buyHealthPotionButton = new JButton("Buy Health Potion (Free)");
-        buyHealthPotionButton.setBounds(50, 150, 200, 30);
-        buyHealthPotionButton.addActionListener(e -> purchaseItem(-100, (FullRelease.GamePanel) callingPanel, "healthPotion"));
-        add(buyHealthPotionButton);*/
+        JButton buyHealthPotionButton = gameGraphics.getHealthPotion();
+        buyHealthPotionButton.setBounds(1000, 300, 100, 200);
+        buyHealthPotionButton.addActionListener(e -> purchaseItem(HealthPotionPrice, "healthPotion"));
+        add(buyHealthPotionButton);
+
+        coinsPrice3 = new JLabel("5");
+        coinsPrice3.setFont(new Font("Arial", Font.BOLD, 40));
+        coinsPrice3.setForeground(Color.RED);
+        coinsPrice3.setBounds(1100, 535,150,30);
+        add(coinsPrice3);
 
         JButton freezeButton = gameGraphics.getFreezeButton();
         freezeButton.setBounds(600, 275, 230, 250);
-        freezeButton.addActionListener(e -> purchaseItem(freezePrice, (FullRelease.GamePanel) callingPanel, "freezeTime"));
+        freezeButton.addActionListener(e -> purchaseItem(freezePrice, "freezeTime"));
         add(freezeButton);
 
-        coinsPrice2 = new JLabel("3");
+        coinsPrice2 = new JLabel("10");
         coinsPrice2.setFont(new Font("Arial", Font.BOLD, 40));
         coinsPrice2.setForeground(Color.RED);
         coinsPrice2.setBounds(775, 535, 150,30);
@@ -66,25 +78,33 @@ public class ShopPanel extends JPanel {
         backButton.setContentAreaFilled(false);
         backButton.setBorderPainted(false);
         backButton.setFocusPainted(false);
-        backButton.addActionListener(e -> switchBack((FullRelease.GamePanel) callingPanel));
+        backButton.addActionListener(e -> switchBack(gamePanel));
         add(backButton);
 
         updateCoinsPriceColor();
     }
 
-    private void purchaseItem(int cost, FullRelease.GamePanel panel, String item) {
-        if (panel != null && FullRelease.GamePanel.CoinManager.getCoins() >= cost) {
+    private void purchaseItem(int cost, String item) {
+        if (FullRelease.GamePanel.CoinManager.getCoins() >= cost) {
             FullRelease.GamePanel.CoinManager.addCoins(-cost);
             updateCoinsDisplay();
-            panel.updateCoinsDisplay();
+            gamePanel.updateCoinsDisplay();
             feedbackLabel.setText("Purchase successful!");
             feedbackLabel.setForeground(Color.GREEN);
 
             switch (item) {
-                case "freezeTime" -> panel.setHasFreezeAbility(true);
-                case "healthPotion" -> panel.setHasHealthPotion();
-                case "magnifyingGlass" -> panel.setHasMagnifyingGlass(true);
+                case "magnifyingGlass":
+                    gamePanel.setHasMagnifyingGlass(true);
+                    break;
+                case "healthPotion":
+                    gamePanel.setHasHealthPotion(true);
+                    break;
+                case "freezeTime":
+                    gamePanel.setHasFreezeAbility(true);
+                    break;
             }
+
+            gamePanel.updateItemVisibility();
         } else {
             feedbackLabel.setText("Not enough coins!");
             feedbackLabel.setForeground(Color.RED);
@@ -109,6 +129,12 @@ public class ShopPanel extends JPanel {
             coinsPrice2.setForeground(Color.GREEN);
         } else {
             coinsPrice2.setForeground(Color.RED);
+        }
+
+        if (playerCoins >= HealthPotionPrice) {
+            coinsPrice3.setForeground(Color.GREEN);
+        } else {
+            coinsPrice3.setForeground(Color.RED);
         }
     }
 
@@ -135,6 +161,10 @@ public class ShopPanel extends JPanel {
 
         if (thirdCasinoChip != null) {
             g.drawImage(thirdCasinoChip, 600, 500, null);
+        }
+
+        if (fourthCasinoChip != null) {
+            g.drawImage(fourthCasinoChip,950, 500, null);
         }
     }
 }

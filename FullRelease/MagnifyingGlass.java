@@ -1,29 +1,22 @@
 package FullRelease;
 
 public class MagnifyingGlass {
-    private boolean hasMagnifyingGlass = false;
-    private boolean nextRoundLive = false;  // Stores the live status of the next round
+    private boolean hasMagnifyingGlass;
+    private boolean nextRoundLive;
+
+    public void acquireMagnifyingGlass() {
+        this.hasMagnifyingGlass = true;
+    }
 
     public boolean hasMagnifyingGlass() {
         return hasMagnifyingGlass;
     }
 
-    public void acquireMagnifyingGlass() {
-        hasMagnifyingGlass = true;
-    }
-
-    public void setNextRoundLive(boolean isLive) {
-        nextRoundLive = isLive;
+    public void setNextRoundLive(boolean nextRoundLive) {
+        this.nextRoundLive = nextRoundLive;
     }
 
     public String checkRound() {
-        // Debug output to trace what the magnifying glass knows
-        System.out.println("DEBUG: Magnifying Glass checked - Next round is " + (nextRoundLive ? "LIVE" : "BLANK"));
-        return nextRoundLive ? "Next round is LIVE!" : "Next round is BLANK!";
-    }
-
-    // Method to help debug the status set by the game
-    public boolean getNextRoundLive() {
-        return nextRoundLive;
+        return "The next round is " + (nextRoundLive ? "LIVE" : "BLANK");
     }
 }

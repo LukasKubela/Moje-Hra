@@ -25,6 +25,7 @@ public class GameGraphics extends JPanel {
     private BufferedImage casinoChip;
     private BufferedImage secondCasinoChip;
     private BufferedImage thirdCasinoChip;
+    private BufferedImage fourthCasinoChip;
     private BufferedImage backButtonImage;
     private JButton backButton;
     private BufferedImage magnifyingGlassImage;
@@ -32,6 +33,16 @@ public class GameGraphics extends JPanel {
     private BufferedImage freezeImage;
     private JButton freezeButton;
     private BufferedImage shootSignImage;
+    private BufferedImage healthPotionImage;
+    private JButton healthPotion;
+    private BufferedImage healthClock1;
+    private BufferedImage healthClock2;
+    private BufferedImage healthClock3;
+    private BufferedImage Lamp;
+    private BufferedImage revolver1Image;
+    private BufferedImage revolver2Image;
+    private BufferedImage sparklingEffect1;
+    private BufferedImage sparklingEffect2;
 
     public GameGraphics() {
         setLayout(new GridBagLayout());
@@ -42,6 +53,7 @@ public class GameGraphics extends JPanel {
         loadCasinoChip();
         loadSecondCasinoChip();
         loadThirdCasinoChip();
+        loadFourthCasinoChip();
         loadBackButtonImage();
         loadMagnifyingGlassImage();
         loadFreezeImage();
@@ -49,6 +61,16 @@ public class GameGraphics extends JPanel {
         initializeMagnifyingGlassButton();
         initializeFreezeButton();
         loadShootSignImage();
+        loadHealthPotionImage();
+        initializeHealthPotionButton();
+        loadHealthClock1();
+        loadHealthClock2();
+        loadHealthClock3();
+        loadLampImage();
+        loadRevolver1Image();
+        loadRevolver2Image();
+        loadSparklingEffectImage();
+        loadSparklingEffect2Image();
     }
 
     private void loadImage() {
@@ -94,6 +116,14 @@ public class GameGraphics extends JPanel {
         }
     }
 
+    private void loadFourthCasinoChip() {
+        try {
+            fourthCasinoChip = ImageIO.read(getClass().getResource("/casino chip.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void loadShootSignImage() {
         try {
             shootSignImage = ImageIO.read(getClass().getResource("/SHOOT sign.png"));
@@ -102,9 +132,73 @@ public class GameGraphics extends JPanel {
         }
     }
 
+    private void loadLampImage() {
+        try {
+            Lamp = ImageIO.read(getClass().getResource("/Lamp.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadHealthClock1() {
+        try {
+            healthClock1 = ImageIO.read(getClass().getResource("/health clock 1.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadHealthClock2() {
+        try {
+            healthClock2 = ImageIO.read(getClass().getResource("/health clock 2.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadHealthClock3() {
+        try {
+            healthClock3 = ImageIO.read(getClass().getResource("/health clock 3.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void loadBackButtonImage() {
         try {
             backButtonImage = ImageIO.read(getClass().getResource("/Back.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadRevolver1Image() {
+        try {
+            revolver1Image = ImageIO.read(getClass().getResource("/Revolver 1.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadRevolver2Image() {
+        try {
+            revolver2Image = ImageIO.read(getClass().getResource("/Revolver 2.png"));
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void loadSparklingEffectImage() {
+        try {
+            sparklingEffect1 = ImageIO.read(getClass().getResource("/sparkling effect revolver 1.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadSparklingEffect2Image() {
+        try {
+            sparklingEffect2 = ImageIO.read(getClass().getResource("/sparkling effect revolver 2.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -121,6 +215,14 @@ public class GameGraphics extends JPanel {
     private void loadFreezeImage() {
         try {
             freezeImage = ImageIO.read(getClass().getResource("/Freeze.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadHealthPotionImage() {
+        try {
+            healthPotionImage = ImageIO.read(getClass().getResource("/Health Potion.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -179,6 +281,10 @@ public class GameGraphics extends JPanel {
 
     private void initializeFreezeButton() {
         freezeButton = createHoverButton(freezeImage);
+    }
+
+    private void initializeHealthPotionButton() {
+        healthPotion = createHoverButton(healthPotionImage);
     }
 
     private JButton createHoverButton(BufferedImage buttonImage) {
@@ -275,6 +381,10 @@ public class GameGraphics extends JPanel {
         return thirdCasinoChip;
     }
 
+    public BufferedImage getFourthCasinoChip() {
+        return fourthCasinoChip;
+    }
+
     public JButton getBackButton() {
         return backButton;
     }
@@ -289,5 +399,53 @@ public class GameGraphics extends JPanel {
 
     public BufferedImage getShootSignImage() {
         return shootSignImage;
+    }
+
+    public JButton getHealthPotion() {
+        return healthPotion;
+    }
+
+    public BufferedImage getMagnifyingGlassImage() {
+        return magnifyingGlassImage;
+    }
+
+    public BufferedImage getFreezeImage() {
+        return freezeImage;
+    }
+
+    public BufferedImage getHealthPotionImage() {
+        return healthPotionImage;
+    }
+
+    public BufferedImage getHealthClock1() {
+        return healthClock1;
+    }
+
+    public BufferedImage getHealthClock2() {
+        return healthClock2;
+    }
+
+    public BufferedImage getHealthClock3() {
+        return healthClock3;
+    }
+
+    public BufferedImage getLamp() {
+        return Lamp;
+    }
+
+    public BufferedImage getRevolver1Image() {
+        return revolver1Image;
+    }
+
+    public BufferedImage getRevolver2Image() {
+        return revolver2Image;
+    }
+
+    public BufferedImage getSparklingEffect1() {
+        return sparklingEffect1;
+    }
+
+    public BufferedImage getSparklingEffect2() {
+        return sparklingEffect2;
     }
 }
