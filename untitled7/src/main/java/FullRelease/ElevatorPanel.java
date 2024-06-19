@@ -65,7 +65,7 @@ public class ElevatorPanel extends JPanel implements KeyListener, ComponentListe
         int wall3Height = getHeight();
         wall3 = new Rectangle(wall3X, wall3Y, wall3Width, wall3Height);
 
-        walkingTimer = new Timer(0, e -> updateWalkingAnimation());
+        walkingTimer = new Timer(100, e -> updateWalkingAnimation());
 
         addComponentListener(this);
     }

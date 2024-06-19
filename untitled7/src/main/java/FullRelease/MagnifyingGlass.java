@@ -17,6 +17,6 @@ public class MagnifyingGlass {
     }
 
     public String checkRound() {
-        return "The next round is " + (nextRoundLive ? "LIVE" : "BLANK");
+        return "The next round is " + (nextRoundLive ? "BLANK" : "LIVE");  // Always returns the opposite of the actual round state
     }
 }
